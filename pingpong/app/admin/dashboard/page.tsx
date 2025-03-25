@@ -13,6 +13,7 @@ import { LogOut, Trophy, Users, Activity, Home } from "lucide-react"
 import { CreateTournamentForm } from "@/components/create-tournament-form"
 import { AddPlayerForm } from "@/components/add-player-form"
 import { TournamentManagement } from "@/components/tournament-management"
+import { MatchManagement } from "@/components/match-management"
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(false)
@@ -20,6 +21,7 @@ export default function AdminDashboardPage() {
   const { toast } = useToast()
   const router = useRouter()
   const tournamentManagementRef = useRef<any>(null)
+  const matchManagementRef = useRef<any>(null)
 
   const handleLogout = () => {
     // Clear admin authentication
@@ -42,6 +44,13 @@ export default function AdminDashboardPage() {
     // Access the fetchTournaments method from the TournamentManagement component
     if (tournamentManagementRef.current?.fetchTournaments) {
       tournamentManagementRef.current.fetchTournaments();
+    }
+  };
+  
+  const refreshMatches = () => {
+    // Access the fetchMatches method from the MatchManagement component
+    if (matchManagementRef.current?.fetchMatches) {
+      matchManagementRef.current.fetchMatches();
     }
   };
 
@@ -172,15 +181,28 @@ export default function AdminDashboardPage() {
             </TabsContent>
 
             <TabsContent value="matches" className="mt-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Match Management</CardTitle>
-                  <CardDescription>Create and manage matches</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => router.push("/matches/new")}>Create New Match</Button>
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Match Management</CardTitle>
+                    <CardDescription>View and manage match scores</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium">All Matches</h3>
+                      <div className="flex gap-2">
+                        <Button onClick={refreshMatches} variant="outline" size="sm">
+                          Refresh
+                        </Button>
+                        <Button onClick={() => router.push("/matches/new")} size="sm">
+                          Create New Match
+                        </Button>
+                      </div>
+                    </div>
+                    <MatchManagement ref={matchManagementRef} />
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
