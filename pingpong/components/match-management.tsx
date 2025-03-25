@@ -12,22 +12,21 @@ import { Activity, Edit, CheckCircle, XCircle, Clock } from "lucide-react"
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback"
 import { format } from "date-fns"
 
+interface Player {
+  name: string;
+  profile_image_url: string | null;
+}
+
 interface Match {
-  id: string
-  player1_id: string
-  player2_id: string
-  player1_score: number
-  player2_score: number
-  status: string
-  created_at: string
-  player1: {
-    name: string
-    profile_image_url: string | null
-  }
-  player2: {
-    name: string
-    profile_image_url: string | null
-  }
+  id: string;
+  player1_id: string;
+  player2_id: string;
+  player1_score: number;
+  player2_score: number;
+  status: string;
+  created_at: string;
+  player1: Player;
+  player2: Player;
 }
 
 export const MatchManagement = forwardRef((props, ref) => {
@@ -44,7 +43,7 @@ export const MatchManagement = forwardRef((props, ref) => {
   const fetchMatches = useCallback(async () => {
     setLoading(true)
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from("matches")
         .select(`
           id, 
@@ -54,21 +53,25 @@ export const MatchManagement = forwardRef((props, ref) => {
           player2_score, 
           status, 
           created_at,
-          player1:player1_id(name, profile_image_url),
-          player2:player2_id(name, profile_image_url)
+          player1:players!player1_id(name, profile_image_url),
+          player2:players!player2_id(name, profile_image_url)
         `)
         .order("created_at", { ascending: false })
 
       if (error) throw error
 
-      // Transform data to match our interface
-      const transformedData = data ? data.map(match => ({
+      // Transform the data to match our interface
+      const transformedData = rawData?.map(match => ({
         ...match,
-        player1: Array.isArray(match.player1) ? match.player1[0] || { name: '', profile_image_url: null } : match.player1,
-        player2: Array.isArray(match.player2) ? match.player2[0] || { name: '', profile_image_url: null } : match.player2,
-      })) : []
+        player1: Array.isArray(match.player1) 
+          ? match.player1[0] || { name: "Unknown", profile_image_url: null }
+          : match.player1 || { name: "Unknown", profile_image_url: null },
+        player2: Array.isArray(match.player2)
+          ? match.player2[0] || { name: "Unknown", profile_image_url: null }
+          : match.player2 || { name: "Unknown", profile_image_url: null }
+      })) as Match[]
 
-      setMatches(transformedData)
+      setMatches(transformedData || [])
     } catch (error) {
       console.error("Error fetching matches:", error)
       toast({
