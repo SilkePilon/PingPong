@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect, type ReactNode } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { AdminPinAuth } from "@/components/admin-pin-auth"
@@ -14,11 +13,40 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    // Check if user is authenticated
+  // Function to check authentication status
+  const checkAuth = () => {
     const adminAuth = localStorage.getItem("adminAuth")
     setIsAuthenticated(adminAuth === "true")
     setIsLoading(false)
+  }
+
+  useEffect(() => {
+    // Check auth status on mount
+    checkAuth()
+
+    // Listen for custom auth change event
+    const handleAuthChange = (event: any) => {
+      if (event.detail && event.detail.authenticated !== undefined) {
+        setIsAuthenticated(event.detail.authenticated)
+      }
+    }
+
+    // Add event listener for our custom auth event
+    window.addEventListener("adminAuthChanged", handleAuthChange)
+
+    // Also listen for storage changes (for logout or auth in other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "adminAuth") {
+        checkAuth()
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+
+    // Clean up event listeners
+    return () => {
+      window.removeEventListener("adminAuthChanged", handleAuthChange)
+      window.removeEventListener("storage", handleStorageChange)
+    }
   }, [])
 
   // If not on admin page, render children

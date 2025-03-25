@@ -36,6 +36,11 @@ export function AdminPinAuth() {
       // Store authentication in localStorage
       localStorage.setItem("adminAuth", "true")
       setIsAuthenticated(true)
+
+      // Dispatch a custom event to notify other components
+      const authEvent = new CustomEvent("adminAuthChanged", { detail: { authenticated: true } });
+      window.dispatchEvent(authEvent);
+
       // Explicitly navigate to dashboard
       router.push("/admin/dashboard")
     } else {

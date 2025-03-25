@@ -22,6 +22,9 @@ export default function AdminDashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem("adminAuth")
+    // Dispatch auth changed event for immediate UI update
+    const authEvent = new CustomEvent("adminAuthChanged", { detail: { authenticated: false } });
+    window.dispatchEvent(authEvent);
     router.push("/admin")
   }
 
