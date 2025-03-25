@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSupabase } from "@/components/supabase-provider"
 import { useToast } from "@/components/ui/use-toast"
 import { motion } from "framer-motion"
-import { LogOut, Trophy, Users, Activity } from "lucide-react"
+import { LogOut, Trophy, Users, Activity, Home } from "lucide-react"
 import { CreateTournamentForm } from "@/components/create-tournament-form"
 import { AddPlayerForm } from "@/components/add-player-form"
 import { TournamentManagement } from "@/components/tournament-management"
@@ -19,24 +19,39 @@ export default function AdminDashboardPage() {
   const { supabase } = useSupabase()
   const { toast } = useToast()
   const router = useRouter()
+  const tournamentManagementRef = useRef<any>(null)
 
   const handleLogout = () => {
     localStorage.removeItem("adminAuth")
     // Dispatch auth changed event for immediate UI update
     const authEvent = new CustomEvent("adminAuthChanged", { detail: { authenticated: false } });
     window.dispatchEvent(authEvent);
-    router.push("/admin")
+    // Redirect to main dashboard instead of admin
+    router.push("/")
   }
+
+  const refreshTournaments = () => {
+    // Access the fetchTournaments method from the TournamentManagement component
+    if (tournamentManagementRef.current?.fetchTournaments) {
+      tournamentManagementRef.current.fetchTournaments();
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="border-b">
         <div className="container flex justify-between items-center py-4">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <Button variant="ghost" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => router.push("/")} className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              <span>Main Dashboard</span>
+            </Button>
+            <Button variant="ghost" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -108,7 +123,7 @@ export default function AdminDashboardPage() {
                     <CardDescription>Create a new ping pong tournament</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <CreateTournamentForm />
+                    <CreateTournamentForm onSuccess={refreshTournaments} />
                   </CardContent>
                 </Card>
 
@@ -118,7 +133,7 @@ export default function AdminDashboardPage() {
                     <CardDescription>View and manage existing tournaments</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <TournamentManagement />
+                    <TournamentManagement ref={tournamentManagementRef} />
                   </CardContent>
                 </Card>
               </div>

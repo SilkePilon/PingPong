@@ -1,6 +1,5 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useSupabase } from "@/components/supabase-provider"
@@ -19,35 +18,39 @@ interface Tournament {
   created_at: string
 }
 
-export function TournamentManagement() {
+export const TournamentManagement = forwardRef((props, ref) => {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [loading, setLoading] = useState(true)
   const { supabase } = useSupabase()
   const { toast } = useToast()
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const { data, error } = await supabase.from("tournaments").select("*").order("created_at", { ascending: false })
-
-        if (error) throw error
-
-        setTournaments(data || [])
-      } catch (error) {
-        console.error("Error fetching tournaments:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load tournaments",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
+  const fetchTournaments = useCallback(async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase.from("tournaments").select("*").order("created_at", { ascending: false })
+      if (error) throw error
+      setTournaments(data || [])
+    } catch (error) {
+      console.error("Error fetching tournaments:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load tournaments",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
-
-    fetchTournaments()
   }, [supabase, toast])
+
+  // Expose fetchTournaments method via ref
+  useImperativeHandle(ref, () => ({
+    fetchTournaments
+  }));
+
+  useEffect(() => {
+    fetchTournaments()
+  }, [fetchTournaments])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -80,7 +83,8 @@ export function TournamentManagement() {
   }
 
   const handleManagePlayers = (tournamentId: string) => {
-    router.push(`/admin/tournaments/${tournamentId}/players`)
+    // Update route to use a valid path
+    router.push(`/tournaments/${tournamentId}`)
   }
 
   if (loading) {
@@ -131,5 +135,5 @@ export function TournamentManagement() {
       ))}
     </div>
   )
-}
+})
 

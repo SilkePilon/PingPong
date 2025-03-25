@@ -1,7 +1,5 @@
 "use client"
-
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,7 +10,11 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { useSupabase } from "@/components/supabase-provider"
 import { useToast } from "@/components/ui/use-toast"
 
-export function CreateTournamentForm() {
+interface CreateTournamentFormProps {
+  onSuccess?: () => void
+}
+
+export function CreateTournamentForm({ onSuccess }: CreateTournamentFormProps = {}) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
@@ -61,6 +63,11 @@ export function CreateTournamentForm() {
       setDescription("")
       setStartDate(undefined)
       setEndDate(undefined)
+      
+      // Notify parent component if callback provided
+      if (onSuccess) {
+        onSuccess()
+      }
 
       // Refresh the tournament list
       router.refresh()
