@@ -8,6 +8,29 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { CalendarDays, Users, Trophy, ArrowLeft } from "lucide-react"
 
+interface PlayerStats {
+  matches_played: number;
+  matches_won: number;
+  total_points_scored: number;
+}
+
+interface Player {
+  id: string;
+  name: string;
+  profile_image_url: string | null;
+  tournament_id: string;
+  player_stats: PlayerStats[];
+}
+
+interface Tournament {
+  id: string;
+  name: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+}
+
 interface PageProps {
   params: {
     id: string
@@ -36,7 +59,7 @@ export default async function TournamentDetailPage({ params }: PageProps) {
     .single();
 
   // Fetch players for this tournament
-  const { data: players } = await supabase
+  const { data: rawPlayers } = await supabase
     .from("players")
     .select(`
       id, 
@@ -52,11 +75,20 @@ export default async function TournamentDetailPage({ params }: PageProps) {
   if (error || !tournament) {
     return notFound();
   }
-  
-  // TypeScript guards to ensure tournament and players data is correctly typed
-  if (!tournament || !Array.isArray(players)) {
-    return notFound();
-  }
+
+  // Transform and sanitize player data for serialization
+  const players = (rawPlayers || []).map((player) => ({
+    id: player.id,
+    name: player.name,
+    profile_image_url: player.profile_image_url,
+    tournament_id: player.tournament_id,
+    player_stats: player.player_stats || [],
+    stats: player.player_stats?.[0] || {
+      matches_played: 0,
+      matches_won: 0,
+      total_points_scored: 0
+    }
+  }));
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null;
@@ -136,7 +168,7 @@ export default async function TournamentDetailPage({ params }: PageProps) {
                       <div>
                         <h3 className="font-medium">{player.name}</h3>
                         <div className="text-xs text-muted-foreground">
-                          Matches: {player.player_stats?.[0]?.matches_played || 0}
+                          Matches: {player.stats?.matches_played || 0}
                         </div>
                       </div>
                     </div>
