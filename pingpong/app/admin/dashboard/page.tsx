@@ -22,12 +22,20 @@ export default function AdminDashboardPage() {
   const tournamentManagementRef = useRef<any>(null)
 
   const handleLogout = () => {
+    // Clear admin authentication
     localStorage.removeItem("adminAuth")
+    
     // Dispatch auth changed event for immediate UI update
     const authEvent = new CustomEvent("adminAuthChanged", { detail: { authenticated: false } });
     window.dispatchEvent(authEvent);
+    
     // Redirect to main dashboard instead of admin
     router.push("/")
+    
+    // Force navigation to ensure we leave the admin area completely
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 100);
   }
 
   const refreshTournaments = () => {
