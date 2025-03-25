@@ -4,11 +4,20 @@ import { TournamentCard } from "@/components/tournament-card"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import Link from "next/link"
 
+interface Tournament {
+  id: string;
+  name: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+}
+
 export default async function TournamentsPage() {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient();
 
   // Fetch tournaments
-  const { data: tournaments } = await supabase
+  const { data: rawTournaments } = await supabase
     .from("tournaments")
     .select(`
       id, 
@@ -18,14 +27,23 @@ export default async function TournamentsPage() {
       end_date,
       status
     `)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  // Transform and sanitize data for serialization
+  const tournaments: Tournament[] = (rawTournaments || []).map(tournament => ({
+    id: tournament.id,
+    name: tournament.name,
+    description: tournament.description,
+    start_date: tournament.start_date,
+    end_date: tournament.end_date,
+    status: tournament.status
+  }));
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 pb-20">
         <div className="container px-4 py-6 md:py-8">
           <PageHeader title="Tournaments" description="View all ping pong tournaments" />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {tournaments && tournaments.length > 0 ? (
               tournaments.map((tournament, index) => (

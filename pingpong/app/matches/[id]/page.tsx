@@ -10,20 +10,28 @@ interface MatchPageProps {
 }
 
 export default async function MatchPage({ params }: MatchPageProps) {
-  const supabase = createServerSupabaseClient()
+  // Ensure params is properly awaited before extracting id
+  const paramsCopy = await Promise.resolve(params);
+  const id = paramsCopy.id;
+  
+  const supabase = await createServerSupabaseClient();
 
   // Check if match exists
-  const { data } = await supabase.from("matches").select("id").eq("id", params.id).single()
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("id", id)
+    .single();
 
-  if (!data) {
-    notFound()
+  if (error || !match) {
+    return notFound();
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 pb-20">
         <div className="container px-4 py-6 md:py-8">
-          <MatchVsScreen matchId={params.id} />
+          <MatchVsScreen matchId={id} />
         </div>
       </main>
       <Navigation />
