@@ -140,6 +140,12 @@ export default async function TournamentDetailPage({ params }: PageProps) {
                   </span>
                 </div>
               )}
+              <Button asChild variant="outline">
+                <Link href={`/tournaments/${tournament.id}/bracket`}>
+                  <Trophy className="mr-2 h-4 w-4" />
+                  View Bracket
+                </Link>
+              </Button>
             </div>
           </div>
 
