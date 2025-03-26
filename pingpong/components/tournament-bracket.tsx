@@ -66,31 +66,20 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
 
   const generateRandomMatches = async () => {
     if (loading) return
-    if (!tournamentId) {
-      toast({
-        title: "Error",
-        description: "Tournament ID is required",
-        variant: "destructive",
-      })
-      return
-    }
     
-    if (players.length < 2) {
-      toast({
-        title: "Error",
-        description: "Need at least 2 players to generate matches",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setLoading(true)
-
     try {
+      if (!tournamentId) {
+        throw new Error("Tournament ID is required")
+      }
+      
+      if (players.length < 2) {
+        throw new Error("Need at least 2 players to generate matches")
+      }
+
+      setLoading(true)
+
       // Shuffle players array
       const shuffledPlayers = [...players].sort(() => Math.random() - 0.5)
-      
-      // Create matches array for database insertion
       const matchInserts = []
       
       // Create pairs of players
@@ -100,16 +89,16 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
         
         if (!player1?.id || !player2?.id) continue
 
+        // Ensure we have all required fields according to the database schema
         const matchInsert = {
           tournament_id: tournamentId,
-          round: 1,
-          position: i / 2,
           player1_id: player1.id,
           player2_id: player2.id,
           player1_score: 0,
           player2_score: 0,
-          status: "pending" as const,
-          winner_id: null
+          status: "pending",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
         matchInserts.push(matchInsert)
       }
@@ -124,22 +113,19 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
         .insert(matchInserts)
         .select(`
           id,
-          round,
-          position,
           tournament_id,
           player1_id,
           player2_id,
           player1_score,
           player2_score,
           status,
-          winner_id,
           player1:players!player1_id(id, name, profile_image_url),
           player2:players!player2_id(id, name, profile_image_url)
         `)
 
       if (error) {
         console.error("Database error:", error)
-        throw new Error("Failed to create matches in the database")
+        throw error
       }
 
       if (!createdMatches || createdMatches.length === 0) {
