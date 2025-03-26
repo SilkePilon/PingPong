@@ -19,13 +19,14 @@ interface RawMatch {
   id: string
   round: number
   position: number
+  tournament_id: string
   player1_id: string | null
   player2_id: string | null
   player1_score: number
   player2_score: number
   status: "pending" | "active" | "completed"
   winner_id: string | null
-  player1: Player[]
+  player1: Player[] 
   player2: Player[]
 }
 
@@ -33,6 +34,7 @@ interface Match {
   id: string
   round: number
   position: number
+  tournament_id: string
   player1_id: string | null
   player2_id: string | null
   player1_score: number
@@ -64,54 +66,67 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
 
   const generateRandomMatches = async () => {
     if (loading) return
+    if (!tournamentId) {
+      toast({
+        title: "Error",
+        description: "Tournament ID is required",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (players.length < 2) {
+      toast({
+        title: "Error",
+        description: "Need at least 2 players to generate matches",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
       // Shuffle players array
       const shuffledPlayers = [...players].sort(() => Math.random() - 0.5)
       
-      // Create matches array
-      const matchPairs: Match[] = []
+      // Create matches array for database insertion
+      const matchInserts = []
       
+      // Create pairs of players
       for (let i = 0; i < shuffledPlayers.length - 1; i += 2) {
         const player1 = shuffledPlayers[i]
         const player2 = shuffledPlayers[i + 1]
         
-        const match: Match = {
-          id: "",  // Will be assigned by Supabase
+        if (!player1?.id || !player2?.id) continue
+
+        const matchInsert = {
+          tournament_id: tournamentId,
           round: 1,
           position: i / 2,
-          player1_id: player1?.id || null,
-          player2_id: player2?.id || null,
+          player1_id: player1.id,
+          player2_id: player2.id,
           player1_score: 0,
           player2_score: 0,
-          status: "pending",
-          winner_id: null,
-          player1: player1 || null,
-          player2: player2 || null
+          status: "pending" as const,
+          winner_id: null
         }
-        matchPairs.push(match)
+        matchInserts.push(matchInsert)
+      }
+
+      if (matchInserts.length === 0) {
+        throw new Error("No valid player pairs could be created")
       }
 
       // Insert matches into database
       const { data: createdMatches, error } = await supabase
         .from("matches")
-        .insert(
-          matchPairs.map(match => ({
-            tournament_id: tournamentId,
-            round: match.round,
-            position: match.position,
-            player1_id: match.player1_id,
-            player2_id: match.player2_id,
-            player1_score: 0,
-            player2_score: 0,
-            status: "pending"
-          }))
-        )
+        .insert(matchInserts)
         .select(`
           id,
           round,
           position,
+          tournament_id,
           player1_id,
           player2_id,
           player1_score,
@@ -122,18 +137,28 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
           player2:players!player2_id(id, name, profile_image_url)
         `)
 
-      if (error) throw error
+      if (error) {
+        console.error("Database error:", error)
+        throw new Error("Failed to create matches in the database")
+      }
+
+      if (!createdMatches || createdMatches.length === 0) {
+        throw new Error("No matches were created")
+      }
 
       setMatches((createdMatches as RawMatch[]).map(transformMatch))
       toast({
         title: "Success",
-        description: "Tournament matches generated successfully",
+        description: `Created ${createdMatches.length} tournament matches successfully`,
       })
+
+      // Refresh the page to show the new matches
+      router.refresh()
     } catch (error) {
       console.error("Error generating matches:", error)
       toast({
         title: "Error",
-        description: "Failed to generate tournament matches",
+        description: error instanceof Error ? error.message : "Failed to generate tournament matches",
         variant: "destructive",
       })
     } finally {
@@ -160,7 +185,7 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           <div className="space-y-4">
             {matches.filter(match => match.player1_id !== null && match.player2_id !== null).map((match, index) => (
               <motion.div
@@ -189,9 +214,11 @@ export function TournamentBracket({ tournamentId, players, existingMatches = [] 
                           className="h-10 w-10"
                         />
                         <div className="font-medium">{match.player1?.name || "TBD"}</div>
+                        <div className="text-lg font-bold">{match.player1_score}</div>
                       </div>
-                      <div className="text-2xl font-bold text-muted-foreground">VS</div>
+                      <div className="text-xl font-bold text-muted-foreground">VS</div>
                       <div className="flex items-center gap-2">
+                        <div className="text-lg font-bold">{match.player2_score}</div>
                         <div className="font-medium text-right">{match.player2?.name || "TBD"}</div>
                         <AvatarWithFallback
                           src={match.player2?.profile_image_url || null}

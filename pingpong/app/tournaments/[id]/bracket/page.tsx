@@ -33,8 +33,11 @@ interface PageProps {
 }
 
 export default async function TournamentBracketPage({ params }: { params: { id: string } }) {
+  // Ensure params is properly awaited
+  const paramsCopy = await Promise.resolve(params)
+  const tournamentId = paramsCopy.id
+
   const supabase = await createServerSupabaseClient()
-  const tournamentId = params.id
 
   // Fetch tournament details
   const { data: tournament } = await supabase

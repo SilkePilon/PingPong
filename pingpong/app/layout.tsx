@@ -4,11 +4,12 @@ import { SupabaseProvider } from "@/components/supabase-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AdminAuthProvider } from "@/components/admin-auth-provider"
+import { NavigationProgress } from "@/components/navigation-progress"
 
 export const metadata = {
   title: "Ping Pong Tournament",
-  description: "Track and manage ping pong tournaments",
-    generator: 'v0.dev'
+  description: "A tournament management system for ping pong matches",
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -19,9 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SupabaseProvider>
             <AdminAuthProvider>
+              <NavigationProgress />
               {children}
               <Toaster />
             </AdminAuthProvider>
@@ -31,7 +33,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-
-
-import './globals.css'
